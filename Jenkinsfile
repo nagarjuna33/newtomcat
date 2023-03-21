@@ -3,6 +3,13 @@ pipeline{
         label 'tomcat'
     }
     stages {
+            stage ('scm tomcat'){
+            steps {
+                    
+                git url: "https://github.com/nagarjuna33/tomcat.git",
+                    branch: 'main'
+            }
+        }
 
         stage ('tomcat'){
        
