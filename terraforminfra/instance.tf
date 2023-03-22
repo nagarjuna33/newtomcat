@@ -33,7 +33,7 @@ inline = [
 "sudo yum install curl -y",
 "sleep 2m",
 "sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key",
-"sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo"
+"sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo",
 "sudo yum install jenkins -y",
 "sudo systemctl start jenkins",
 "sudo systemctl enable jenkins",
@@ -41,8 +41,6 @@ inline = [
   ]
   }
 }
-
-
 
 resource "aws_instance" "node1" {
   ami                         = var.ami_id
@@ -54,7 +52,7 @@ resource "aws_instance" "node1" {
   availability_zone           = "ap-south-1a"
 
   tags = {
-    "Name" = "node1"
+    "Name" = "node2"
   }
 
 }
@@ -69,21 +67,16 @@ resource "null_resource" "node1null" {
     private_key = file("~/.ssh/id_rsa")
    }
 
-
 provisioner "remote-exec" {
     
 inline = [
        "sudo yum update -y",
-       "sudo yum install java-1.8.0-openjdk-devel -y",  
        "sudo yum install java-11-openjdk -y", 
        "sudo yum install wget -y",
        "sudo yum install git -y",
        "sudo yum install maven -y",
+      "sudo yum install java-1.8.0-openjdk-devel -y",
   ]
   }
 }
-
-
-
-
 

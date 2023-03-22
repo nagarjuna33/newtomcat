@@ -3,25 +3,25 @@ pipeline{
         label 'tomcat'
     }
     stages {
-            stage ('scm tomcat'){
+
+        stage ('scm tomcat'){
             steps {
-                    
-                git url: "https://github.com/nagarjuna33/tomcat.git",
+               git url: "https://github.com/nagarjuna33/tomcat.git",
                     branch: 'main'
             }
         }
 
-        stage ('tomcat'){
+    stage ('tomcat service'){
        
        steps{
        sh 'wget https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.87/bin/apache-tomcat-8.5.87.tar.gz'
        sh 'sudo tar -xzvf apache-tomcat-8.5.87.tar.gz -C /opt'
        sh 'sudo mv /opt/apache-tomcat-8.5.87 /opt/tomcat'
        sh 'sudo chmod +x /opt/tomcat/bin/startup.sh'
+       sh 'sudo cp tomcat.service /etc/systemd/system/tomcat.service'
        sh 'sudo systemctl daemon-reload'
        sh 'sudo groupadd tomcat'
        sh 'sudo useradd -M -s /bin/nologin -g tomcat -d /opt/tomcat tomcat'
-       sh 'sudo useradd -r -m -U -d /opt/tomcat -s /bin/false tomcat'
        sh 'sudo chgrp -R tomcat /opt/tomcat'
        sh 'sudo chmod -R g+rwx /opt/tomcat/conf'
        sh 'sudo setfacl -m centos:wrx /opt/tomcat/*'
@@ -31,18 +31,18 @@ pipeline{
        sh 'sudo systemctl enable tomcat'
        }
         }
-        stage ('scm'){
+
+        stage ('scm gol'){
             steps {
-                    
                 git url: "https://github.com/nagarjunaduggireddy/game-of-life.git",
                     branch: 'master'
             }
         }
+
         stage ('build package') {
-            
-            steps {
+             steps {
                 sh 'mvn package'
-                sh 'cp /home/ansible/remote/workspace/game-of-life/gameoflife-web/target/gameoflife.war  /opt/tomcat/webapps/'
+                sh 'cp /home/centos/remote/workspace/job/game-of-life/gameoflife-web/target/gameoflife.war  /opt/tomcat/webapps/'
 }
    }
     }
