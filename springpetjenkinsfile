@@ -1,0 +1,90 @@
+pipeline {
+    agent { label 'node-1' }
+    triggers { pollSCM('* * * * *') }
+    stages {
+        stage ('clone the code'){
+            steps {
+                    mail subject: 'build started',
+                        body: 'build started',
+                        to: 'nagrjuna33@gmail.com'
+                git url: "https://github.com/nagarjuna33/spring-petclinicnew.git",
+                    branch: 'main'
+            }
+        }
+        stage ('sonarqube') {
+            steps{
+                withSonarQubeEnv('sonarqube') {
+                    sh 'mvn clean package sonar:sonar'
+            }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 20, unit: 'MINUTES'){
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('upload package to the jfrog ') {
+            steps {
+            rtUpload (
+                serverId: 'jfrog_id',
+                spec: '''{
+                    "files": [
+                    {
+                        "pattern": "./target/*.jar",
+                        "target": "java-libs-release/"
+                    }
+                    ]
+        }''',
+        buildName: "$env.JOB_NAME",
+        buildNumber: "$env.BUILD_NUMBER",
+        project: 'springpetclinic'
+        )
+        }
+        }
+        stage ('Publish build info') {
+            steps {
+                rtPublishBuildInfo (
+                    serverId: "jfrog_id"
+                )
+            }
+        }
+        stage ('image build') {
+            
+            steps {
+                
+            withCredentials([usernamePassword(credentialsId: 'jfrog_id', passwordVariable: 'jfog_passwd', usernameVariable: 'jfrog_user')]) {
+            
+                    sh "docker login sow.jfrog.io  -u ${jfrog_user} -p ${jfog_passwd}"
+                    sh 'docker image build -t sss:1.0 .'
+                    sh 'docker image tag sss:1.0 sow.jfrog.io/local-docker/srv:Dev'
+                    sh 'docker image push sow.jfrog.io/local-docker/srv:Dev' 
+            }
+            
+            }
+        }
+        stage ('run container') {
+            steps {
+                sh 'docker container run -d -P sow.jfrog.io/local-docker/srv:Dev'
+            }
+        }
+        
+    }
+    post {
+        always {
+            echo "$env.JOB_NAME completed"
+            mail subject: 'build completed',
+                 body: 'job completed',
+                 to: 'nagarjuna33@gmail.com'
+        }
+        failure {
+            mail subject: "build failed for jenkins job $env.JOB_NAME with build_id $env.BUILD_ID",
+                 body: "job failed for jenkins job $env.JOB_NAME",
+                 to: 'nagarjuna33@gmail.com'
+        }
+        success {
+            junit '**/surefire-reports/*.xml'
+        }
+    }
+}
